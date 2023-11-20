@@ -8,7 +8,6 @@ import os
 import time
 from train_informations import get_journey,get_actual_time_and_date,get_best_prices
 from openai import OpenAI
-import logging
 
 openai.api_key = os.getenv('OPENAI_API_KEY')
 client = OpenAI()
@@ -39,24 +38,27 @@ functions = {
 
 # Function to call the assistant required functions and return their outputs as JSON strings
 def execute_required_functions(required_actions):
-    tool_outputs = []
-    for tool_call in required_actions.submit_tool_outputs.tool_calls:
-        func_name = tool_call.function.name
-        args = json.loads(tool_call.function.arguments)
-        
-        # Call the corresponding Python function
-        if func_name in functions:
-            function = functions[func_name]
-            result = function(**args)  
+    try:
+        tool_outputs = []
+        for tool_call in required_actions.submit_tool_outputs.tool_calls:
+            func_name = tool_call.function.name
+            args = json.loads(tool_call.function.arguments)
+            
+            # Call the corresponding Python function
+            if func_name in functions:
+                function = functions[func_name]
+                result = function(**args)  
 
-            # Serialize the function's output to JSON
-            result_str = json.dumps(result)
-            print(f'Result from {func_name} : {result}')
-            # Add the result to the list of tool outputs
-            tool_outputs.append({
-                "tool_call_id": tool_call.id,
-                "output": result_str,
-            })
+                # Serialize the function's output to JSON
+                result_str = json.dumps(result)
+                print(f'Result from {func_name} : {result}')
+                # Add the result to the list of tool outputs
+                tool_outputs.append({
+                    "tool_call_id": tool_call.id,
+                    "output": result_str,
+                })
+    except Exception as e:
+        st.error("Sorry, I'm confused. Please refresh the Page (F5)")
     return tool_outputs
 
 
