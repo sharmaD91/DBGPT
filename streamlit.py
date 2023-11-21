@@ -86,8 +86,6 @@ max_messages = (
     5  
 )
 
-if hasattr(st.session_state.messages,'data') :
-    print(len(st.session_state.messages.data))
 if hasattr(st.session_state.messages,'data') and len(st.session_state.messages.data) >= max_messages:
     st.info(
         """Notice: The maximum message limit for this demo version has been reached.!
