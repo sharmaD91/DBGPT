@@ -8,6 +8,7 @@ import os
 import time
 from train_informations import get_journey,get_actual_time_and_date,get_best_prices
 from openai import OpenAI
+import logging
 
 openai.api_key = os.getenv('OPENAI_API_KEY')
 client = OpenAI()
@@ -132,7 +133,7 @@ if hasattr(st.session_state.run, 'status'):
     if st.session_state.run.status == "requires_action":
         print(f'requried action', st.session_state.run.required_action)
         with st.chat_message('assistant',avatar="🤖"):
-            st.write("Executing Action ......")
+            st.write(f'Executing Action ...')
 
         # Get the tool outputs by executing the required functions
         tool_outputs = execute_required_functions(st.session_state.run.required_action)
@@ -161,7 +162,7 @@ if hasattr(st.session_state.run, 'status'):
     # Handle any status that is not 'completed'
     elif st.session_state.run.status != "completed":
         with st.chat_message('assistant',avatar="🤖"):
-            st.write("Thinking ......")
+            st.write(f'Thinking ...... ')
         # Attempt to retrieve the run again, possibly redundant if there's no other status but 'running' or 'failed'
         st.session_state.run = client.beta.threads.runs.retrieve(
             thread_id=st.session_state.thread.id,

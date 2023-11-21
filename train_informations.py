@@ -31,7 +31,7 @@ def get_journey(from_location,to_location,depature,arrival=None):
     if response.status_code == 200:
         return response.json()
     else:
-        return "Error during calling the get_jouney function"
+        return f'Error during calling the get_jouney function: {response.json()}'
     
 def get_actual_time_and_date(n):
     endpoint = 'http://worldtimeapi.org/api/timezone/Europe/London'
