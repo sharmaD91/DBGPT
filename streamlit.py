@@ -10,6 +10,8 @@ from train_informations import get_journey,get_actual_time_and_date,get_best_pri
 from openai import OpenAI
 import logging
 
+
+
 openai.api_key = os.getenv('OPENAI_API_KEY')
 client = OpenAI()
 assistant_id = os.getenv('assistant_id')
@@ -19,6 +21,13 @@ assistant_id = os.getenv('assistant_id')
 conversation_history = []
 # add you assistant_id 
 st.title('DB GPT Train Assistant 🚉')
+with st.expander("ℹ️ Disclaimer"):
+    st.caption(
+        "Please note, this demo is designed to process a maximum of 5 interactions."
+    )
+
+st.warning('Due to the beta stage of the Assistants API, processing messages can take a significant amount of time.', icon="⚠️")
+
 
 with st.sidebar:
     st.title('DB GPT Train Assistant 🚉')
@@ -63,6 +72,7 @@ def execute_required_functions(required_actions):
     return tool_outputs
 
 
+
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
 if "run" not in st.session_state:
@@ -71,102 +81,115 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "retry_error" not in st.session_state:
     st.session_state.retry_error = 0
-if "assistant" not in st.session_state:
 
+max_messages = (
+    5  
+)
 
-    # Load the previously created assistant
-    st.session_state.assistant = openai.beta.assistants.retrieve(assistant_id)
-
-    # Create a new thread for this session
-    st.session_state.thread = client.beta.threads.create(
-        metadata={
-            'session_id': st.session_state.session_id,
-        }
+if hasattr(st.session_state.messages,'data') :
+    print(len(st.session_state.messages.data))
+if hasattr(st.session_state.messages,'data') and len(st.session_state.messages.data) >= max_messages:
+    st.info(
+        """Notice: The maximum message limit for this demo version has been reached.!
+        Thank you for your understanding."""
     )
-    
-# If the run is completed, display the messages
-elif hasattr(st.session_state.run, 'status') and st.session_state.run.status == "completed":
-    print(st.session_state.run.status)
+else: 
+    if "assistant" not in st.session_state:
 
-    # Retrieve the list of messages
-    st.session_state.messages = client.beta.threads.messages.list(
-        thread_id=st.session_state.thread.id
-    )
 
-    for thread_message in st.session_state.messages.data:
-        for message_content in thread_message.content:
-            # Access the actual text content
-            message_content = message_content.text
-            annotations = message_content.annotations
-     
-    # Display messages
-    for message in reversed(st.session_state.messages.data):
-        if message.role in ["user", "assistant"]:
-            with st.chat_message(message.role,avatar=f'{"👩‍🎨" if message.role=="user" else "🤖"}'):
-                for content_part in message.content:
-                    message_text = content_part.text.value
-                    st.markdown(message_text)
+        # Load the previously created assistant
+        st.session_state.assistant = openai.beta.assistants.retrieve(assistant_id)
 
-if prompt := st.chat_input("How can I help you?"):
-    with st.chat_message('user',avatar="👩‍🎨"):
-        st.write(prompt)
+        # Create a new thread for this session
+        st.session_state.thread = client.beta.threads.create(
+            metadata={
+                'session_id': st.session_state.session_id,
+            }
+        )
+        
+    # If the run is completed, display the messages
+    elif hasattr(st.session_state.run, 'status') and st.session_state.run.status == "completed":
+        print(st.session_state.run.status)
 
-    # Add message to the thread
-    st.session_state.messages = client.beta.threads.messages.create(
-        thread_id=st.session_state.thread.id,
-        role="user",
-        content=prompt
-    )
+        # Retrieve the list of messages
+        st.session_state.messages = client.beta.threads.messages.list(
+            thread_id=st.session_state.thread.id
+        )
 
-    # Do a run to process the messages in the thread
-    st.session_state.run = client.beta.threads.runs.create(
-        thread_id=st.session_state.thread.id,
-        assistant_id=st.session_state.assistant.id,
-    )
-    if st.session_state.retry_error < 3:
-        st.rerun()
-                    
-if hasattr(st.session_state.run, 'status'):
-    
-    print(st.session_state.run.status)
+        for thread_message in st.session_state.messages.data:
+            for message_content in thread_message.content:
+                # Access the actual text content
+                message_content = message_content.text
+                annotations = message_content.annotations
+        
+        # Display messages
+        for message in reversed(st.session_state.messages.data):
+            if message.role in ["user", "assistant"]:
+                with st.chat_message(message.role,avatar=f'{"👩‍🎨" if message.role=="user" else "🤖"}'):
+                    for content_part in message.content:
+                        message_text = content_part.text.value
+                        st.markdown(message_text)
 
-    if st.session_state.run.status == "requires_action":
-        print(f'requried action', st.session_state.run.required_action)
-        with st.chat_message('assistant',avatar="🤖"):
-            st.write(f'Executing Action ...')
+    if prompt := st.chat_input("How can I help you?"):
+        with st.chat_message('user',avatar="👩‍🎨"):
+            st.write(prompt)
 
-        # Get the tool outputs by executing the required functions
-        tool_outputs = execute_required_functions(st.session_state.run.required_action)
-
-        # Submit the tool outputs back to the Assistant
-        st.session_state.run = client.beta.threads.runs.submit_tool_outputs(
+        # Add message to the thread
+        st.session_state.messages = client.beta.threads.messages.create(
             thread_id=st.session_state.thread.id,
-            run_id=st.session_state.run.id,
-            tool_outputs=tool_outputs
+            role="user",
+            content=prompt
+        )
+
+        # Do a run to process the messages in the thread
+        st.session_state.run = client.beta.threads.runs.create(
+            thread_id=st.session_state.thread.id,
+            assistant_id=st.session_state.assistant.id,
         )
         if st.session_state.retry_error < 3:
             st.rerun()
+                        
+    if hasattr(st.session_state.run, 'status'):
+        
+        print(st.session_state.run.status)
 
+        if st.session_state.run.status == "requires_action":
+            print(f'requried action', st.session_state.run.required_action)
+            with st.chat_message('assistant',avatar="🤖"):
+                st.write(f'Executing Action ...')
 
-    # Handle the 'failed' status
-    elif st.session_state.run.status == "failed":
-        st.session_state.retry_error += 1
-        with st.chat_message('assistant'):
+            # Get the tool outputs by executing the required functions
+            tool_outputs = execute_required_functions(st.session_state.run.required_action)
+
+            # Submit the tool outputs back to the Assistant
+            st.session_state.run = client.beta.threads.runs.submit_tool_outputs(
+                thread_id=st.session_state.thread.id,
+                run_id=st.session_state.run.id,
+                tool_outputs=tool_outputs
+            )
             if st.session_state.retry_error < 3:
-                st.write("Run failed, retrying ......")
-                time.sleep(3)  # Longer delay before retrying
                 st.rerun()
-            else:
-                st.error("FAILED: The OpenAI API is currently processing too many requests. Please try again later ......")
 
-    # Handle any status that is not 'completed'
-    elif st.session_state.run.status != "completed":
-        with st.chat_message('assistant',avatar="🤖"):
-            st.write(f'Thinking ...... ')
-        # Attempt to retrieve the run again, possibly redundant if there's no other status but 'running' or 'failed'
-        st.session_state.run = client.beta.threads.runs.retrieve(
-            thread_id=st.session_state.thread.id,
-            run_id=st.session_state.run.id,
-        )
-        if st.session_state.retry_error < 3:
-            st.rerun()
+
+        # Handle the 'failed' status
+        elif st.session_state.run.status == "failed":
+            st.session_state.retry_error += 1
+            with st.chat_message('assistant'):
+                if st.session_state.retry_error < 3:
+                    st.write("Run failed, retrying ......")
+                    time.sleep(3)  # Longer delay before retrying
+                    st.rerun()
+                else:
+                    st.error("FAILED: The OpenAI API is currently processing too many requests. Please try again later ......")
+
+        # Handle any status that is not 'completed'
+        elif st.session_state.run.status != "completed":
+            with st.chat_message('assistant',avatar="🤖"):
+                st.write(f'Thinking ...... ')
+            # Attempt to retrieve the run again, possibly redundant if there's no other status but 'running' or 'failed'
+            st.session_state.run = client.beta.threads.runs.retrieve(
+                thread_id=st.session_state.thread.id,
+                run_id=st.session_state.run.id,
+            )
+            if st.session_state.retry_error < 3:
+                st.rerun()
