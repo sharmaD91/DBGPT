@@ -36,7 +36,7 @@ with st.sidebar:
     st.write('Give me a train connection for tomorrow 16:00 from Hamburg Hbf to Frankfurt ')
     st.write('Give me the cheapest connections for next week tuesday from Berlin to Hannover ')
     st.divider()
-    st.write('📝 Showcase for OpenAI Assistant, read more under : [blogpost ](https://medium.com/@sharmadave/openais-assistants-api-uncovered-building-a-real-time-train-assistant-integrated-with-multiple-eb8d69fb3bf4)')
+    st.write('📝 Showcase for OpenAI Assistant, read more under : [blogpost](https://medium.com/@sharmadave/openais-assistants-api-uncovered-building-a-real-time-train-assistant-integrated-with-multiple-eb8d69fb3bf4)')
     st.markdown('**Created by [David Sharma](http://david-sharma.de)**')
 
 # map function names from the assistant to your Python functions
